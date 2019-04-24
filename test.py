@@ -11,7 +11,7 @@ gfgsddsfgsdfg
 2+2
 
 
-for x in range(12)shtr:thrsfh
+for x in range(12)hftd:
     return 1
     thftsf
 htsrhsths
