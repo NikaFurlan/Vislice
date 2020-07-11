@@ -1,2 +1,2 @@
-Vislice
-Projekt pri predmetu Uvod v Programiranje
+# VISLICE
+#Projektna naloga pri predmetu Uvod v programiranje
