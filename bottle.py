@@ -28,7 +28,7 @@ __license__ = 'MIT'
 
 
 def _cli_parse(args):  # pragma: no coverage
-    from argparse import ArgumentParser
+    import ArgumentParser
 
     parser = ArgumentParser(prog=args[0], usage="%(prog)s [options] package.module:app")
     opt = parser.add_argument
