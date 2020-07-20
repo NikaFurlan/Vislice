@@ -23,7 +23,7 @@ def nova_igra():
 
 @bottle.get('/igra/')
 def pokazi_igro():
-    id_igre = int(bottle.request.get_cookie('idigre', secret=SKRIVNOST).split('e')[1])
+    id_igre = int(bottle.request.get_cookie('idigre', secret=SKRIVNOST))
     igra, poskus = vislice.igre[id_igre]
     return bottle.template('igra.tpl',
                            igra=igra,
