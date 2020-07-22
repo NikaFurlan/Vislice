@@ -1,4 +1,4 @@
-# VISLICE
+# Vislice
 Projekt pri vajah iz predmeta Uvod v Programiranje
 
 ## 1. Navodila za zagon igre
