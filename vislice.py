@@ -18,26 +18,25 @@ def index():
 def nova_igra():
     id_igre = vislice.nova_igra()
     bottle.response.set_cookie('idigre', 'idigre{}'.format(id_igre), secret=SKRIVNOST, path='/')
-    bottle.redirect('/igra/')
+    bottle.redirect(f'/igra/{id_igre}/')
 
 
-@bottle.get('/igra/')
-def pokazi_igro():
-    id_igre = int(bottle.request.get_cookie('idigre', secret=SKRIVNOST))
+@bottle.get('/igra/<id_igre:int>/')
+def pokazi_igro(id_igre):
     igra, poskus = vislice.igre[id_igre]
-    return bottle.template('igra.tpl',
-                           igra=igra,
-                           poskus=poskus)
+
+    return bottle.template('datoteke/views/igra.tpl', igra=igra, poskus=poskus, id_igre=id_igre)
 
 
-@bottle.post('/igra/')
-def ugibaj():
-    id_igre = int(bottle.request.get_cookie('idigre', secret=SKRIVNOST).split('e')[1])
+@bottle.post('/igra/<id_igre:int>/')
+def ugibaj(id_igre):
+    #dobim crko 
     crka = bottle.request.forms.getunicode('crka')
+
     vislice.ugibaj(id_igre, crka)
-    bottle.redirect('/igra/')
 
-
+    bottle.redirect(f'/igra/{id_igre}/')
+    
 @bottle.get('/statistika/')
 def pokazi_statistiko():
     slovar_statistik = model.statistika(DATOTEKA_S_STANJEM)
