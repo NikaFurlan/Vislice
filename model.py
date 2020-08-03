@@ -1,25 +1,23 @@
 import random
 import json
 
-STEVILO_DOVOLJENIH_NAPAK = 9
-PRAVILNA_CRKA = "+"
-PONOVLJENA_CRKA = "O"
-VEC_KOT_CRKA = ">"
-POSEBEN_ZNAK = "#"
-NAPACNA_CRKA = "-"
-ZMAGA = "W"
-PORAZ = "X"
-ZACETEK = "S"
+STEVILO_DOVOLJENIH_NAPAK = 10
 
+PRAVILNA_CRKA = '+'
+PONOVLJENA_CRKA = 'o'
+NAPACNA_CRKA = '-'
+
+ZACETEK = 'S'
+ZMAGA = 'W'
+PORAZ = 'X'
+
+DATOTEKA_STANJE = 'stanje.json'
+DATOTEKA_BESEDE = 'besede.txt'
 
 class Igra:
-
     def __init__(self, geslo, crke=None):
-        self.geslo = geslo
-        if crke is None:
-            self.crke = []
-        else:
-            self.crke = crke
+        self.geslo = geslo.upper()
+        self.crke = [] if crke is None else [crka.upper() for crka in crke]
 
     def napacne_crke(self):
         return [crka for crka in self.crke if crka not in self.geslo]
@@ -30,36 +28,33 @@ class Igra:
     def stevilo_napak(self):
         return len(self.napacne_crke())
 
-    def zmaga(self):
-        return all(crka in self.crke for crka in self.geslo)
-
     def poraz(self):
-        return self.stevilo_napak() > STEVILO_DOVOLJENIH_NAPAK
+        return self.stevilo_napak() >= STEVILO_DOVOLJENIH_NAPAK
+
+    def zmaga(self):
+        #return set(self.geslo) == set(self.pravilne_crke())
+        #return all(crka in self.crke for crka in self.geslo)
+        for crka in self.geslo:
+            if crka not in self.crke:
+                return False
+        return True
 
     def pravilni_del_gesla(self):
-        delni = ''
+        s = ''
         for crka in self.geslo:
-            if crka in self.crke:
-                delni += crka + " "
-            else:
-                delni += '_ '
-        return delni[:-1]
+            s += crka + ' ' if crka in self.crke else '_ '
+        return s
 
     def nepravilni_ugibi(self):
-        return " ".join(self.napacne_crke())
+        return ' '.join(self.napacne_crke())
 
-    def ugibaj(self, ugib):
-        if len(ugib) > 1 or len(ugib) == 0:
-            return VEC_KOT_CRKA
-        crka = ugib.upper()
-        if crka not in 'ABCČDEFGHIJKLMNOPRSŠTUVZŽXYZWQĆĐ':
-            return POSEBEN_ZNAK
-        if crka in self.crke:
+    def ugibaj(self, ugibana_crka):
+        ugibana_crka = ugibana_crka.upper()
+        if ugibana_crka in self.crke:
             return PONOVLJENA_CRKA
         else:
-            self.crke.append(crka)
-
-            if crka in self.geslo:
+            self.crke.append(ugibana_crka)
+            if ugibana_crka in self.geslo:
                 if self.zmaga():
                     return ZMAGA
                 else:
@@ -70,31 +65,18 @@ class Igra:
                 else:
                     return NAPACNA_CRKA
 
-    def stevilo_pravilnih_crk_s_ponovitvami(self):
-        stevec = 0
-        for crka in self.geslo:
-            if crka in self.crke:
-                stevec += 1
-            else:
-                pass
-        return stevec
-
-
-
-with open("besede.txt", "r", encoding="utf-8") as datoteka_z_besedami:
-    bazen_besed = [vrstica.strip().upper() for vrstica in datoteka_z_besedami]
-
+bazen_besed = []
+for beseda in open(DATOTEKA_BESEDE, encoding='utf-8'):
+    bazen_besed.append(beseda.strip().upper())
 
 def nova_igra():
-    return Igra(random.choice(bazen_besed))
-
+    beseda = random.choice(bazen_besed)
+    return Igra(beseda)
 
 class Vislice:
-
-    def __init__(self, datoteka_s_stanjem, datoteka_z_besedami='besede.txt'):
-        self.igre = {}
+    def __init__(self, datoteka_s_stanjem):
         self.datoteka_s_stanjem = datoteka_s_stanjem
-        self.datoteka_z_besedami = datoteka_z_besedami
+        self.nalozi_igre_iz_datoteke()
 
     def prost_id_igre(self):
         if len(self.igre) == 0:
@@ -103,61 +85,24 @@ class Vislice:
             return max(self.igre.keys()) + 1
 
     def nova_igra(self):
-        self.nalozi_igre_iz_datoteke()
-        with open(self.datoteka_z_besedami, 'r', encoding='utf-8') as f:
-            bazen_besed = [vrstica.strip().upper() for vrstica in f]
-        igra = Igra(random.choice(bazen_besed))
         id_igre = self.prost_id_igre()
+        igra = nova_igra()
         self.igre[id_igre] = (igra, ZACETEK)
         self.zapisi_igre_v_datoteko()
         return id_igre
 
     def ugibaj(self, id_igre, crka):
-        self.nalozi_igre_iz_datoteke()
         igra, _ = self.igre[id_igre]
-        poskus = igra.ugibaj(crka)
-        self.igre[id_igre] = (igra, poskus)
-        self.zapisi_igre_v_datoteko()
-
-    def zapisi_igre_v_datoteko(self):
-        with open(self.datoteka_s_stanjem, 'w', encoding='utf-8') as f:
-            igre1 = {id_igre: ((igra.geslo, igra.crke), poskus)
-                     for id_igre, (igra, poskus) in self.igre.items()}
-            json.dump(igre1, f)
-        return
+        stanje = igra.ugibaj(crka)
+        self.igre[id_igre] = (igra, stanje) 
+        self.zapisi_igre_v_datoteko() 
 
     def nalozi_igre_iz_datoteke(self):
-        with open(self.datoteka_s_stanjem, 'r', encoding="utf-8") as f:
-            igre = json.load(f)
-            self.igre = {int(id_igre): (Igra(geslo, crke), poskus)
-                         for id_igre, ((geslo, crke), poskus) in igre.items()}
+        with open(self.datoteka_s_stanjem, 'r', encoding='utf-8') as f:
+            igre = json.load(f) 
+            self.igre = {int(id_igre): (Igra(geslo, crke), stanje) for id_igre, (geslo, crke, stanje) in igre.items()}
 
-
-def odstotek(stevec, imenovalec):
-    return round((stevec / imenovalec) * 100)
-
-
-def statistika(datoteka_s_stanjem):
-    slovar_statistik = {}
-    vislice = Vislice(datoteka_s_stanjem)
-    vislice.nalozi_igre_iz_datoteke()
-
-    stevilo_iger = len(vislice.igre.keys())
-    slovar_statistik["stevilo_iger"] = stevilo_iger
-
-    stevilo_zmag = sum([1 if poskus == ZMAGA else 0 for _, poskus in vislice.igre.values()])
-    slovar_statistik["odstotek_zmag"] = odstotek(stevilo_zmag, stevilo_iger)
-
-    stevilo_porazov = sum([1 if poskus == PORAZ else 0 for _, poskus in vislice.igre.values()])
-    slovar_statistik["odstotek_porazov"] = odstotek(stevilo_porazov, stevilo_iger)
-
-    stevilo_nedokoncnih_iger = stevilo_iger - stevilo_zmag - stevilo_porazov
-    slovar_statistik["odstotek_nedokoncanih_iger"] = odstotek(stevilo_nedokoncnih_iger, stevilo_iger)
-
-    najdaljse_uganjeno_geslo = max([igra.geslo if poskus == ZMAGA else "" for igra, poskus in vislice.igre.values()], key=len)
-    slovar_statistik["najdaljse_uganjeno_geslo"] = najdaljse_uganjeno_geslo
-
-    odstotki_uganjenih_crk = [odstotek(igra.stevilo_pravilnih_crk_s_ponovitvami(), len(igra.geslo)) for igra, _ in vislice.igre.values()]
-    slovar_statistik["povprecen_odstotek_uganjenih_crk"] = "{0:.2f}".format(sum(odstotki_uganjenih_crk) / len(odstotki_uganjenih_crk))
-
-    return slovar_statistik
+    def zapisi_igre_v_datoteko(self):
+        with open(self.datoteka_s_stanjem, 'w', encoding='utf-8') as f: 
+            igre = {id_igre: (igra.geslo, igra.crke, stanje) for id_igre, (igra, stanje) in self.igre.items()}
+            json.dump(igre, f, ensure_ascii=False)
